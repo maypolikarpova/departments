@@ -1,10 +1,11 @@
 package repository;
 
-import domain.Department;
 import domain.Employee;
 
-import java.sql.*;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.List;
 
 public class EmployeeRepository {
 
@@ -14,8 +15,8 @@ public class EmployeeRepository {
        this.connectionManager = connectionManager;
     }
 
-    public ArrayList<Employee> getEmployees() {
-        ArrayList<Employee> employees = new ArrayList<>();
+    public List<Employee> getEmployees() {
+        List<Employee> employees = new ArrayList<>();
         try {
             String sql = "SELECT * FROM Employee";
             connectionManager.getStatement().execute(sql);

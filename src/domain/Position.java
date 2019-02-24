@@ -1,25 +1,29 @@
 package domain;
 
-import java.time.LocalDate;
+import java.math.BigDecimal;
+import java.util.Date;
 
 public class Position {
 
-    private String id;
+    private int id;
     private String description;
-    private LocalDate startDate;
-    private LocalDate endDate;
+    private Date startDate;
+    private Date endDate;
+    private BigDecimal salary;
 
-    public Position(String id, String description, LocalDate startDate) {
+    public Position(int id, String description, Date startDate, Date endDate, BigDecimal salary) {
         this.description = description;
         this.id = id;
         this.startDate = startDate;
+        this.endDate = endDate;
+        this.salary = salary;
     }
 
-    public String getId() {
+    public int getId() {
         return id;
     }
 
-    public void setId(String id) {
+    public void setId(int id) {
         this.id = id;
     }
 
@@ -31,19 +35,27 @@ public class Position {
         this.description = description;
     }
 
-    public LocalDate getStartDate() {
+    public Date getStartDate() {
         return startDate;
     }
 
-    public void setStartDate(LocalDate startDate) {
+    public void setStartDate(Date startDate) {
         this.startDate = startDate;
     }
 
-    public LocalDate getEndDate() {
+    public Date getEndDate() {
         return endDate;
     }
 
-    public void setEndDate(LocalDate endDate) {
+    public void setEndDate(Date endDate) {
         this.endDate = endDate;
+    }
+
+    public BigDecimal getSalary() {
+        return salary;
+    }
+
+    public void setSalary(BigDecimal salary) {
+        this.salary = salary;
     }
 }

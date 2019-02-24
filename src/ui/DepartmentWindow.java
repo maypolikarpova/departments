@@ -2,41 +2,50 @@ package ui;
 
 import domain.Department;
 import domain.Employee;
+import domain.Position;
 import repository.ConnectionManager;
 import repository.DepartmentRepository;
 import repository.EmployeeRepository;
-import ui.popUpWindows.*;
-
-import java.awt.GridLayout;
-import java.awt.event.ActionListener;
-import java.awt.event.KeyEvent;
+import repository.PositionRepository;
+import ui.department.AddDepartmentWindow;
+import ui.department.EditDepartmentWindow;
+import ui.employee.AddEmployeeWindow;
+import ui.employee.FilterByEndDateWindow;
+import ui.employee.FilterByStartDateWindow;
+import ui.employee.SortByDateWindow;
 
 import javax.swing.*;
-
-import java.awt.BorderLayout;
-import java.util.ArrayList;
 import javax.swing.table.DefaultTableModel;
+import java.awt.*;
+import java.awt.event.ActionListener;
+import java.awt.event.KeyEvent;
+import java.util.Date;
+import java.util.List;
+import java.util.Objects;
 
 public class DepartmentWindow {
     private DepartmentWindow mainWindow;
-    private JFrame frame;
     private DepartmentRepository departmentRepository;
     private EmployeeRepository employeeRepository;
-    private ConnectionManager connectionManager;
 
     private JTable departmentTable;
-    private JButton departmentEditButton;
-    private JButton employeeEditButton;
-
-    private int selectedDepartmentId;
+    private JButton deleteDepartmentButton;
+    private JButton editDepartmentButton;
+    private JButton addEmployeeButton;
+    private JTable employeeTable;
+    private PositionRepository positionRepository;
+    private JButton filterByStartDatesButton;
+    private JButton filterByEndDatedButton;
+    private JButton sortByDateButton;
 
     public DepartmentWindow() {
         mainWindow = this;
-        connectionManager = new ConnectionManager();
+        ConnectionManager connectionManager = new ConnectionManager();
         connectionManager.connect("Projects", "root", "qwertyuiop");
 
         departmentRepository = new DepartmentRepository(connectionManager);
         employeeRepository = new EmployeeRepository(connectionManager);
+        positionRepository = new PositionRepository(connectionManager);
 
         initialize();
     }
@@ -45,8 +54,12 @@ public class DepartmentWindow {
         departmentTable.setModel(fillDepartmentTable((DefaultTableModel) departmentTable.getModel()));
     }
 
+    public void refreshEmployeeTable() {
+        employeeTable.setModel(fillEmployeeTable((DefaultTableModel) employeeTable.getModel()));
+    }
+
     private void initialize() {
-        frame = new JFrame();
+        JFrame frame = new JFrame();
         frame.setSize(900, 600);
         frame.setTitle("Відділи");
         frame.setVisible(true);
@@ -74,9 +87,9 @@ public class DepartmentWindow {
         JPanel actionPanel = new JPanel();
 
         actionPanel.add(addDepartmentTable(), BorderLayout.CENTER);
-        actionPanel.add(addDepartmentButton());
-        actionPanel.add(addEmployeeButton());
-        actionPanel.add(addEditDepartmentButton());
+        actionPanel.add(addDepartmentButton(), BorderLayout.EAST);
+        actionPanel.add(deleteDepartment(), BorderLayout.EAST);
+        actionPanel.add(editDepartment(), BorderLayout.EAST);
 
         departmentPanel.add(controlPanel);
         departmentPanel.add(actionPanel);
@@ -84,27 +97,29 @@ public class DepartmentWindow {
         return departmentPanel;
     }
 
+    private JButton deleteDepartment() {
 
-    private JComponent addEmployeePanel() {
-        JPanel employeePanel = new JPanel(false);
-        employeePanel.setLayout(new BorderLayout(0, 0));
+        deleteDepartmentButton = new JButton("Видалити");
+        deleteDepartmentButton.addActionListener(e -> {
+            int selectedDepartmentId = Integer.parseInt(departmentTable.getValueAt(departmentTable.getSelectedRow(), 0).toString());
+            departmentRepository.deleteDepartment(selectedDepartmentId);
+            refreshDepartmentTable();
+        });
+        deleteDepartmentButton.setVisible(false);
 
-        JPanel controlPanel = new JPanel();
-        controlPanel.setLayout(new BorderLayout());
+        return deleteDepartmentButton;
+    }
 
-        JPanel actionPanel = new JPanel();
+    private JButton editDepartment() {
 
-        actionPanel.add(addChooseDepartmentBox());
-        actionPanel.add(addEmployeeTable(), BorderLayout.CENTER);
-        actionPanel.add(addFilterByStartDatesButton(), BorderLayout.EAST);
-        actionPanel.add(addFilterByEndDatedButton(), BorderLayout.EAST);
-        actionPanel.add(addSortByDateButton(), BorderLayout.EAST);
-        actionPanel.add(addEditEmployeeButton());
+        editDepartmentButton = new JButton("Редагувати");
+        editDepartmentButton.addActionListener(e -> {
+            int selectedDepartmentId = Integer.parseInt(departmentTable.getValueAt(departmentTable.getSelectedRow(), 0).toString());
+            new EditDepartmentWindow(mainWindow, departmentRepository, selectedDepartmentId);
+        });
+        editDepartmentButton.setVisible(false);
 
-        employeePanel.add(controlPanel);
-        employeePanel.add(actionPanel);
-
-        return employeePanel;
+        return editDepartmentButton;
     }
 
     private JPanel addDepartmentTable() {
@@ -123,7 +138,8 @@ public class DepartmentWindow {
 
         departmentTable.getSelectionModel().addListSelectionListener(e -> {
             if (departmentTable.getSelectedRow() != -1) {
-                departmentEditButton.setVisible(true);
+                deleteDepartmentButton.setVisible(true);
+                editDepartmentButton.setVisible(true);
             }
         });
 
@@ -136,7 +152,7 @@ public class DepartmentWindow {
 
     private DefaultTableModel fillDepartmentTable(DefaultTableModel departmentTableModel) {
         departmentTableModel.setRowCount(0);
-        ArrayList<Department> departments = departmentRepository.getDepartments();
+        List<Department> departments = departmentRepository.getDepartments();
 
         for (Department department : departments) {
             String[] tableRow = new String[3];
@@ -149,7 +165,6 @@ public class DepartmentWindow {
         return departmentTableModel;
     }
 
-
     private JButton addDepartmentButton() {
         JButton addDepartmentButton = new JButton("Додати новий відділ");
         addDepartmentButton.addActionListener(e -> {
@@ -159,54 +174,68 @@ public class DepartmentWindow {
         return addDepartmentButton;
     }
 
-    private JButton addEmployeeButton() {
-        JButton addEmployeeButton = new JButton("Додати співробітників");
+    private JComponent addEmployeePanel() {
+        JPanel employeePanel = new JPanel(false);
+        employeePanel.setLayout(new BorderLayout(0, 0));
+
+        JPanel controlPanel = new JPanel();
+        controlPanel.setLayout(new BorderLayout());
+
+        JPanel actionPanel = new JPanel();
+
+        actionPanel.add(addChooseDepartmentBox());
+        actionPanel.add(createEmployeeTable(), BorderLayout.CENTER);
+        actionPanel.add(addFilterByStartDatesButton(), BorderLayout.EAST);
+        actionPanel.add(addFilterByEndDatedButton(), BorderLayout.EAST);
+        actionPanel.add(addSortByDateButton(), BorderLayout.EAST);
+        actionPanel.add(createAddEmployeeButton());
+
+        employeePanel.add(controlPanel);
+        employeePanel.add(actionPanel);
+
+        return employeePanel;
+    }
+
+    private JButton createAddEmployeeButton() {
+        addEmployeeButton = new JButton("Додати співробітника до відділу");
         addEmployeeButton.addActionListener(e -> {
-            new AddEmployeeWindow(mainWindow, departmentRepository);
+            int selectedEmployeeId = Integer.parseInt(employeeTable.getValueAt(employeeTable.getSelectedRow(), 0).toString());
+            new AddEmployeeWindow(mainWindow, positionRepository, departmentRepository, selectedEmployeeId);
         });
 
         return addEmployeeButton;
     }
 
-    private JButton addEditDepartmentButton() {
-        departmentEditButton = new JButton("Редагувати");
-        departmentEditButton.addActionListener(e -> {
-            new EditDepartmentWindow(mainWindow, departmentRepository);
-        });
-        departmentEditButton.setVisible(false);
-
-        return departmentEditButton;
-    }
-
     private JComboBox addChooseDepartmentBox() {
-        String[] items = {"1", "2", "3"};
-        JComboBox comboBox = new JComboBox(items);
+
+        JComboBox comboBox = new JComboBox(departmentRepository.getDepartments().stream()
+                                                   .map(Department::getDepartmentId)
+                                                   .map(Objects::toString).toArray());
 
         ActionListener actionListener = e -> {
             JComboBox box = (JComboBox) e.getSource();
             String item = (String) box.getSelectedItem();
-            selectedDepartmentId = Integer.valueOf(item);
         };
         comboBox.addActionListener(actionListener);
 
         return comboBox;
     }
 
-    private JPanel addEmployeeTable() {
+    private JPanel createEmployeeTable() {
         JPanel tablePanel = new JPanel();
-        JTable employeeTable = new JTable();
+        employeeTable = new JTable();
         tablePanel.setLayout(new GridLayout());
         employeeTable.setFillsViewportHeight(true);
         employeeTable.setDefaultEditor(Object.class, null);
         employeeTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
 
-        String[] columnNames = {"Номер", "ПІБ", "Посада", "Стать", "Дата народження", "Дата початку роботи", "Дата закінчення"};
+        String[] columnNames = {"Номер", "ПІБ", "Посада", "Стать", "Дата народження", "Оклад", "Дата початку роботи", "Дата закінчення"};
         DefaultTableModel departmentTableModel = (DefaultTableModel) employeeTable.getModel();
         departmentTableModel.setColumnIdentifiers(columnNames);
 
         employeeTable.getSelectionModel().addListSelectionListener(e -> {
             if (employeeTable.getSelectedRow() != -1) {
-                employeeEditButton.setVisible(true);
+                addEmployeeButton.setVisible(true);
             }
         });
 
@@ -220,14 +249,28 @@ public class DepartmentWindow {
 
     private DefaultTableModel fillEmployeeTable(DefaultTableModel employeeTableModel) {
         employeeTableModel.setRowCount(0);
-        ArrayList<Employee> employees = employeeRepository.getEmployees();
+        List<Employee> employees = employeeRepository.getEmployees();
 
         for (Employee employee : employees) {
-            String[] tableRow = new String[4];
-            tableRow[0] = Integer.toString(employee.getId());
+            String[] tableRow = new String[8];
+            Integer employeeId = employee.getId();
+            Position position = positionRepository.getPosition(employeeId);
+
+            tableRow[0] = Integer.toString(employeeId);
             tableRow[1] = employee.getName();
-            tableRow[2] = employee.getGender();
-            tableRow[3] = employee.getBirthDate().toString();
+            tableRow[3] = employee.getGender();
+            tableRow[4] = employee.getBirthDate().toString();
+
+            if (position != null) {
+                tableRow[2] = position.getDescription();
+                tableRow[5] = position.getSalary().toString();
+                tableRow[6] = position.getStartDate().toString();
+                Date endDate = position.getEndDate();
+                if (endDate != null) {
+                    tableRow[7] = endDate.toString();
+                }
+            }
+            
             employeeTableModel.addRow(tableRow);
         }
 
@@ -235,40 +278,29 @@ public class DepartmentWindow {
     }
 
     private JButton addFilterByStartDatesButton() {
-        departmentEditButton = new JButton("Фільтрувати за датою початку роботи");
-        departmentEditButton.addActionListener(e -> {
+        filterByStartDatesButton = new JButton("Фільтрувати за датою початку роботи");
+        filterByStartDatesButton.addActionListener(e -> {
             new FilterByStartDateWindow(mainWindow, departmentRepository);
         });
 
-        return departmentEditButton;
+        return filterByStartDatesButton;
     }
 
     private JButton addFilterByEndDatedButton() {
-        departmentEditButton = new JButton("Фільтрувати за датою закінчення роботи");
-        departmentEditButton.addActionListener(e -> {
+        filterByEndDatedButton = new JButton("Фільтрувати за датою закінчення роботи");
+        filterByEndDatedButton.addActionListener(e -> {
             new FilterByEndDateWindow(mainWindow, departmentRepository);
         });
 
-        return departmentEditButton;
+        return filterByEndDatedButton;
     }
 
     private JButton addSortByDateButton() {
-        departmentEditButton = new JButton("Сортувати за складом на певну дату");
-        departmentEditButton.addActionListener(e -> {
+        sortByDateButton = new JButton("Сортувати за складом на певну дату");
+        sortByDateButton.addActionListener(e -> {
             new SortByDateWindow(mainWindow, departmentRepository);
         });
 
-        return departmentEditButton;
+        return sortByDateButton;
     }
-
-    private JButton addEditEmployeeButton() {
-        employeeEditButton = new JButton("Редагувати");
-        employeeEditButton.addActionListener(e -> {
-            new EditEmployeeButton(mainWindow, employeeRepository);
-        });
-        employeeEditButton.setVisible(false);
-
-        return employeeEditButton;
-    }
-
 }

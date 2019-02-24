@@ -2,9 +2,10 @@ package repository;
 
 import domain.Department;
 
-import java.awt.print.Book;
-import java.sql.*;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.List;
 
 public class DepartmentRepository {
 
@@ -52,18 +53,18 @@ public class DepartmentRepository {
 
     public void updateDepartment(int departmentId, String name, String phone) {
         try {
-            String sql = "UPDATE Departmetns SET";
+            String sql = "UPDATE Department SET";
             boolean updatesDefined = false;
             if (name != null) {
-                sql += " name = '" + name + "'";
+                sql += " department_name = '" + name + "'";
                 updatesDefined = true;
             }
             if (phone != null) {
                 if (updatesDefined) sql += ",";
-                sql += " phoneNumber = '" + phone + "'";
+                sql += " department_phone = '" + phone + "'";
                 updatesDefined = true;
             }
-            sql += " WHERE readerId = " + departmentId;
+            sql += " WHERE department_id = " + departmentId;
             if (updatesDefined) {
                 connectionManager.getStatement().executeUpdate(sql);
             }
@@ -74,15 +75,15 @@ public class DepartmentRepository {
 
     public void deleteDepartment(int departmentId) {
         try {
-            String sql = "delete from Departmet where departmentId = " + departmentId;
+            String sql = "delete from Department where department_id = " + departmentId;
             connectionManager.getStatement().executeUpdate(sql);
         } catch (SQLException e) {
             System.out.println(e.getMessage());
         }
     }
 
-    public ArrayList<Department> getDepartments() {
-        ArrayList<Department> departments = new ArrayList<>();
+    public List<Department> getDepartments() {
+        List<Department> departments = new ArrayList<>();
         try {
             String sql = "SELECT * FROM Department";
             connectionManager.getStatement().execute(sql);

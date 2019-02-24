@@ -1,4 +1,4 @@
-package ui.popUpWindows;
+package ui.department;
 
 import repository.DepartmentRepository;
 import ui.DepartmentWindow;
@@ -7,21 +7,25 @@ import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import java.awt.*;
 
-public class AddDepartmentWindow {
+public class EditDepartmentWindow {
+
     private JFrame frame;
     private DepartmentWindow mainWindow;
     private DepartmentRepository departmentRepository;
+    private int selectedDepartmentId;
     JLabel message;
 
-    public AddDepartmentWindow(DepartmentWindow mainWindow, DepartmentRepository departmentRepository) {
+    public EditDepartmentWindow(DepartmentWindow mainWindow, DepartmentRepository departmentRepository, int selectedDepartmentId) {
         this.mainWindow = mainWindow;
         this.departmentRepository = departmentRepository;
+        this.selectedDepartmentId = selectedDepartmentId;
         initialize();
     }
 
+
     private void initialize() {
         frame = new JFrame();
-        frame.setTitle("Додати відділ");
+        frame.setTitle("Редагувати відділ");
         frame.setSize(400, 160);
         frame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
         frame.setVisible(true);
@@ -46,13 +50,13 @@ public class AddDepartmentWindow {
         panel.add(phoneField);
 
         panel.add(message);
-        panel.add(createSubmitButton(nameField, phoneField));
+        panel.add(editButton(nameField, phoneField));
 
         frame.getContentPane().add(panel);
     }
 
-    private JButton createSubmitButton(JTextField nameField, JTextField phoneField) {
-        JButton submitButton = new JButton("Створити");
+    private JButton editButton(JTextField nameField, JTextField phoneField) {
+        JButton submitButton = new JButton("Редагувати");
         submitButton.addActionListener(e -> {
             try {
                 String name = nameField.getText();
@@ -62,9 +66,9 @@ public class AddDepartmentWindow {
                 if (phoneNumber.length() <= 7)
                     throw new Exception("Номер телефону має складатись з 7 та більше символів");
 
-                departmentRepository.insertDepartment(name, phoneNumber);
+                departmentRepository.updateDepartment(selectedDepartmentId, name, phoneNumber);
 
-                message.setText("Створено!");
+                message.setText("Відредаговано!");
                 nameField.setEditable(false);
                 phoneField.setEditable(false);
                 submitButton.setEnabled(false);

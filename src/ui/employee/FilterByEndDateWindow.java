@@ -1,4 +1,4 @@
-package ui.popUpWindows;
+package ui.employee;
 
 import repository.DepartmentRepository;
 import ui.DepartmentWindow;

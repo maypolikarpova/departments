@@ -42,4 +42,23 @@ public class EmployeeRepository {
         }
         return employees;
     }
+
+    public Employee getEmployee(int employeeId) {
+        Employee employee = null;
+        try {
+            String sql = "SELECT * FROM Employee WHERE employee_id= " + employeeId;
+            connectionManager.getStatement().execute(sql);
+            ResultSet resultSet = connectionManager.getStatement().getResultSet();
+            if ((resultSet != null) && (resultSet.next())) {
+                employee = new Employee(
+                        resultSet.getInt(1),
+                        resultSet.getString(2),
+                        resultSet.getString(3),
+                        resultSet.getDate(4));
+            }
+        } catch (SQLException e) {
+            System.out.println(e.getMessage());
+        }
+        return employee;
+    }
 }

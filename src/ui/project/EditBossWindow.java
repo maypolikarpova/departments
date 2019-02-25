@@ -12,7 +12,7 @@ import java.awt.event.ActionListener;
 import java.util.List;
 import java.util.Objects;
 
-public class AddBossWindow {
+public class EditBossWindow {
 
     private JFrame frame;
     private DepartmentWindow mainWindow;
@@ -24,7 +24,7 @@ public class AddBossWindow {
     private JLabel message;
     private JButton submitButton;
 
-    public AddBossWindow(DepartmentWindow mainWindow, EmployeeRepository employeeRepository, BossRepository bossRepository, int selectedDepartmentId, int selectedProjectId) {
+    public EditBossWindow(DepartmentWindow mainWindow, EmployeeRepository employeeRepository, BossRepository bossRepository, int selectedDepartmentId, int selectedProjectId) {
         this.mainWindow = mainWindow;
         this.bossRepository = bossRepository;
         this.selectedProjectId = selectedProjectId;
@@ -35,7 +35,7 @@ public class AddBossWindow {
 
     private void initialize() {
         frame = new JFrame();
-        frame.setTitle("Додати керівника до проекту");
+        frame.setTitle("Перевизначити керівника на проекті");
         frame.setSize(400, 160);
         frame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
         frame.setVisible(true);
@@ -63,7 +63,7 @@ public class AddBossWindow {
 
         submitButton.addActionListener(e -> {
             try {
-                bossRepository.addBoss(selectedProjectId, Integer.parseInt((String) employeeIdBox.getSelectedItem()));
+                bossRepository.updateBoss(selectedProjectId, Integer.parseInt((String) employeeIdBox.getSelectedItem()));
 
                 employeeIdBox.setEditable(false);
                 submitButton.setEnabled(false);

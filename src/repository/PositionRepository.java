@@ -52,7 +52,9 @@ public class PositionRepository {
                             resultSet.getString(5),
                             resultSet.getDate(2),
                             resultSet.getDate(3),
-                            resultSet.getBigDecimal(4)));
+                            resultSet.getBigDecimal(4),
+                            resultSet.getInt(5),
+                            resultSet.getInt(6)));
                 }
             }
         } catch (SQLException e) {
@@ -74,11 +76,40 @@ public class PositionRepository {
                         resultSet.getString(5),
                         resultSet.getDate(2),
                         resultSet.getDate(3),
-                        resultSet.getBigDecimal(4));
+                        resultSet.getBigDecimal(4),
+                        resultSet.getInt(6),
+                        resultSet.getInt(7));
             }
         } catch (SQLException e) {
             System.out.println(e.getMessage());
         }
         return position;
+    }
+
+    public void updatePosition(String description, BigDecimal salary, int selectedDepartmentId, int selectedEmployeeId) {
+        try {
+            String sql = "UPDATE Positions SET";
+            boolean updatesDefined = false;
+            if (description != null) {
+                sql += " description_position = '" + description + "'";
+                updatesDefined = true;
+            }
+            if (salary != null) {
+                if (updatesDefined) sql += ",";
+                sql += " salary = '" + salary + "'";
+                updatesDefined = true;
+            }
+            if (selectedDepartmentId != -1) {
+                if (updatesDefined) sql += ",";
+                sql += " department_id = '" + selectedDepartmentId + "'";
+                updatesDefined = true;
+            }
+            sql += " WHERE employee_id=" + selectedEmployeeId;
+            if (updatesDefined) {
+                connectionManager.getStatement().executeUpdate(sql);
+            }
+        } catch (SQLException e) {
+            System.out.println(e.getMessage());
+        }
     }
 }

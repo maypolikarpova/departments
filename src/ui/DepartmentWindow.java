@@ -1,14 +1,13 @@
 package ui;
 
-import domain.Department;
-import domain.Employee;
-import domain.Position;
-import domain.Project;
+import domain.*;
 import repository.*;
 import ui.department.AddDepartmentWindow;
 import ui.department.EditDepartmentWindow;
 import ui.employee.AddEmployeeWindow;
+import ui.employee.EditEmployeeWindow;
 import ui.project.AddBossWindow;
+import ui.project.EditBossWindow;
 
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
@@ -36,6 +35,8 @@ public class DepartmentWindow {
     private JButton addBossButton;
     private ProjectRepository projectRepository;
     private BossRepository bossRepository;
+    private JButton editBossButton;
+    private JButton editEmployeeButton;
 
     public DepartmentWindow() {
         mainWindow = this;
@@ -46,6 +47,7 @@ public class DepartmentWindow {
         employeeRepository = new EmployeeRepository(connectionManager);
         positionRepository = new PositionRepository(connectionManager);
         projectRepository = new ProjectRepository(connectionManager);
+        bossRepository = new BossRepository(connectionManager);
 
         initialize();
     }
@@ -56,6 +58,10 @@ public class DepartmentWindow {
 
     public void refreshEmployeeTable(Integer selected) {
         employeeTable.setModel(fillEmployeeTable((DefaultTableModel) employeeTable.getModel(), selected));
+    }
+
+    public void refreshProjectTable(Integer selected) {
+        projectTable.setModel(fillProjectTable((DefaultTableModel) projectTable.getModel(), selected));
     }
 
     private void initialize() {
@@ -85,18 +91,16 @@ public class DepartmentWindow {
         JPanel departmentPanel = new JPanel(false);
         departmentPanel.setLayout(new BorderLayout(0, 0));
 
-        JPanel controlPanel = new JPanel();
-        controlPanel.setLayout(new BorderLayout());
-
         JPanel actionPanel = new JPanel();
+        JPanel control = new JPanel(new BorderLayout());
 
         actionPanel.add(addDepartmentTable(), BorderLayout.CENTER);
-        actionPanel.add(addDepartmentButton(), BorderLayout.EAST);
-        actionPanel.add(deleteDepartment(), BorderLayout.EAST);
-        actionPanel.add(editDepartment(), BorderLayout.EAST);
+        control.add(addDepartmentButton(), BorderLayout.NORTH);
+        control.add(deleteDepartment());
+        control.add(editDepartment(), BorderLayout.SOUTH);
 
-        departmentPanel.add(controlPanel);
-        departmentPanel.add(actionPanel);
+        departmentPanel.add(actionPanel, BorderLayout.CENTER);
+        departmentPanel.add(control, BorderLayout.EAST);
 
         return departmentPanel;
     }
@@ -182,16 +186,13 @@ public class DepartmentWindow {
         JPanel employeePanel = new JPanel(false);
         employeePanel.setLayout(new BorderLayout(0, 0));
 
-        JPanel controlPanel = new JPanel();
-        controlPanel.setLayout(new BorderLayout());
+        JPanel actionPanel = new JPanel(new BorderLayout());
 
-        JPanel actionPanel = new JPanel();
-
-        actionPanel.add(addChooseDepartmentBox());
+        actionPanel.add(addChooseDepartmentBox(), BorderLayout.EAST);
         actionPanel.add(createEmployeeTable(), BorderLayout.CENTER);
-        actionPanel.add(createAddEmployeeButton());
+        actionPanel.add(createAddEmployeeButton(), BorderLayout.AFTER_LAST_LINE);
+        actionPanel.add(createEditEmployeeButton(), BorderLayout.BEFORE_FIRST_LINE);
 
-        employeePanel.add(controlPanel);
         employeePanel.add(actionPanel);
 
         return employeePanel;
@@ -209,9 +210,21 @@ public class DepartmentWindow {
         return addEmployeeButton;
     }
 
+    private JButton createEditEmployeeButton() {
+        editEmployeeButton = new JButton("Перепризначити співробітника до відділу");
+        editEmployeeButton.addActionListener(e -> {
+            int selectedEmployeeId = Integer.parseInt(employeeTable.getValueAt(employeeTable.getSelectedRow(), 0).toString());
+            new EditEmployeeWindow(mainWindow, positionRepository, departmentRepository, selectedEmployeeId);
+        });
+
+        editEmployeeButton.setVisible(false);
+
+        return editEmployeeButton;
+    }
+
     private JComboBox addChooseDepartmentBox() {
 
-        JComboBox comboBox = new JComboBox(getEmployeesList());
+        JComboBox comboBox = new JComboBox(getDepartmentsList());
 
         ActionListener actionListener = e -> {
             JComboBox box = (JComboBox) e.getSource();
@@ -228,15 +241,15 @@ public class DepartmentWindow {
         return comboBox;
     }
 
-    private Object[] getEmployeesList() {
-        List<String> employees = departmentRepository.getDepartments().stream()
-                                         .map(Department::getDepartmentId)
-                                         .map(Objects::toString)
-                                         .collect(Collectors.toList());
+    private Object[] getDepartmentsList() {
+        List<String> departments = departmentRepository.getDepartments().stream()
+                                           .map(Department::getDepartmentId)
+                                           .map(Objects::toString)
+                                           .collect(Collectors.toList());
 
-        employees.add("");
+        departments.add("");
 
-        return employees.toArray();
+        return departments.toArray();
     }
 
     private JPanel createEmployeeTable() {
@@ -247,13 +260,21 @@ public class DepartmentWindow {
         employeeTable.setDefaultEditor(Object.class, null);
         employeeTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
 
-        String[] columnNames = {"Номер", "ПІБ", "Посада", "Стать", "Дата народження", "Оклад", "Дата початку роботи", "Дата закінчення"};
+        String[] columnNames = {"Номер", "ПІБ", "Посада", "Стать", "Дата народження", "Оклад", "Дата початку роботи", "Дата закінчення", "Відділ"};
         DefaultTableModel departmentTableModel = (DefaultTableModel) employeeTable.getModel();
         departmentTableModel.setColumnIdentifiers(columnNames);
 
         employeeTable.getSelectionModel().addListSelectionListener(e -> {
-            if (employeeTable.getSelectedRow() != -1) {
-                addEmployeeButton.setVisible(true);
+            int selectedRow = employeeTable.getSelectedRow();
+
+            if (selectedRow != -1) {
+                if (employeeTable.getValueAt(selectedRow, 8) != null) {
+                    addEmployeeButton.setVisible(false);
+                    editEmployeeButton.setVisible(true);
+                } else {
+                    addEmployeeButton.setVisible(true);
+                    editEmployeeButton.setVisible(false);
+                }
             }
         });
 
@@ -270,7 +291,7 @@ public class DepartmentWindow {
         List<Employee> employees = employeeRepository.getEmployees(selected);
 
         for (Employee employee : employees) {
-            String[] tableRow = new String[8];
+            String[] tableRow = new String[9];
             Integer employeeId = employee.getId();
             Position position = positionRepository.getPosition(employeeId);
 
@@ -287,6 +308,7 @@ public class DepartmentWindow {
                 if (endDate != null) {
                     tableRow[7] = endDate.toString();
                 }
+                tableRow[8] = String.valueOf(position.getDepartmentId());
             }
 
             employeeTableModel.addRow(tableRow);
@@ -299,11 +321,12 @@ public class DepartmentWindow {
         JPanel projectPanel = new JPanel(false);
         projectPanel.setLayout(new BorderLayout(0, 0));
 
-        JPanel actionPanel = new JPanel(new GridLayout(3,1));
+        JPanel actionPanel = new JPanel(new BorderLayout());
 
-        actionPanel.add(projectTable());
-        actionPanel.add(createAddBossButton());
-        actionPanel.add(addChooseDepartmentBox());
+        actionPanel.add(projectTable(), BorderLayout.CENTER);
+        actionPanel.add(createEditBossButton(), BorderLayout.AFTER_LAST_LINE);
+        actionPanel.add(createAddBossButton(), BorderLayout.BEFORE_FIRST_LINE);
+        actionPanel.add(addChooseDepartmentBoxForProjects(), BorderLayout.EAST);
 
         projectPanel.add(actionPanel);
 
@@ -318,13 +341,20 @@ public class DepartmentWindow {
         projectTable.setDefaultEditor(Object.class, null);
         projectTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
 
-        String[] columnNames = {"Номер", "Клієнт", "Початок роботи", "Плановане закінчення", "Реальне закінчення", "Ціна", "Витрати", "Оцінка", "Номер відділу"};
+        String[] columnNames = {"Номер", "Клієнт", "Початок роботи", "Плановане закінчення", "Реальне закінчення", "Ціна", "Витрати", "Оцінка", "Номер відділу", "Керівник", "Номер керівника"};
         DefaultTableModel departmentTableModel = (DefaultTableModel) projectTable.getModel();
         departmentTableModel.setColumnIdentifiers(columnNames);
 
         projectTable.getSelectionModel().addListSelectionListener(e -> {
-            if (projectTable.getSelectedRow() != -1) {
-                addBossButton.setVisible(true);
+            int selectedRow = projectTable.getSelectedRow();
+            if (selectedRow != -1) {
+                if (projectTable.getValueAt(selectedRow, 10) != null) {
+                    addBossButton.setVisible(false);
+                    editBossButton.setVisible(true);
+                } else {
+                    editBossButton.setVisible(false);
+                    addBossButton.setVisible(true);
+                }
             }
         });
 
@@ -341,7 +371,7 @@ public class DepartmentWindow {
         List<Project> projects = projectRepository.getProjects(selected);
 
         for (Project project : projects) {
-            String[] tableRow = new String[9];
+            String[] tableRow = new String[11];
             int projectId = project.getId();
 
             tableRow[0] = Integer.toString(projectId);
@@ -358,6 +388,13 @@ public class DepartmentWindow {
             tableRow[7] = project.getEstimation();
             tableRow[8] = String.valueOf(project.getDepartmentId());
 
+            Boss boss = bossRepository.getBoss(projectId);
+            if (boss != null) {
+                int employeeId = boss.getEmployeeId();
+                tableRow[9] = employeeRepository.getEmployee(employeeId).getName();
+                tableRow[10] = String.valueOf(employeeId);
+            }
+
             projectTableModel.addRow(tableRow);
         }
 
@@ -368,11 +405,44 @@ public class DepartmentWindow {
         addBossButton = new JButton("Додати керівника до проекту");
         addBossButton.addActionListener(e -> {
             int selectedProjectId = Integer.parseInt(projectTable.getValueAt(projectTable.getSelectedRow(), 0).toString());
-            new AddBossWindow(mainWindow, bossRepository, selectedProjectId);
+            int selectedDepartmentId = projectRepository.getDepartmentId(selectedProjectId);
+            new AddBossWindow(mainWindow, employeeRepository, bossRepository, selectedDepartmentId, selectedProjectId);
         });
 
         addBossButton.setVisible(false);
 
         return addBossButton;
+    }
+
+    private JButton createEditBossButton() {
+        editBossButton = new JButton("Перепризначити керівника");
+        editBossButton.addActionListener(e -> {
+            int selectedProjectId = Integer.parseInt(projectTable.getValueAt(projectTable.getSelectedRow(), 0).toString());
+            int selectedDepartmentId = projectRepository.getDepartmentId(selectedProjectId);
+            new EditBossWindow(mainWindow, employeeRepository, bossRepository, selectedDepartmentId, selectedProjectId);
+        });
+
+        editBossButton.setVisible(false);
+
+        return editBossButton;
+    }
+
+    private JComboBox addChooseDepartmentBoxForProjects() {
+
+        JComboBox comboBox = new JComboBox(getDepartmentsList());
+
+        ActionListener actionListener = e -> {
+            JComboBox box = (JComboBox) e.getSource();
+            String boxText = (String) box.getSelectedItem();
+
+            Integer selected = null;
+            if (!boxText.equals("")) {
+                selected = Integer.parseInt(boxText);
+            }
+            refreshProjectTable(selected);
+        };
+        comboBox.addActionListener(actionListener);
+
+        return comboBox;
     }
 }

@@ -10,13 +10,17 @@ public class Position {
     private Date startDate;
     private Date endDate;
     private BigDecimal salary;
+    private int departmentId;
+    private int employeeId;
 
-    public Position(int id, String description, Date startDate, Date endDate, BigDecimal salary) {
+    public Position(int id, String description, Date startDate, Date endDate, BigDecimal salary, int departmentId, int employeeId) {
         this.description = description;
         this.id = id;
         this.startDate = startDate;
         this.endDate = endDate;
         this.salary = salary;
+        this.employeeId = employeeId;
+        this.departmentId = departmentId;
     }
 
     public int getId() {
@@ -57,5 +61,13 @@ public class Position {
 
     public void setSalary(BigDecimal salary) {
         this.salary = salary;
+    }
+
+    public int getDepartmentId() {
+        return departmentId;
+    }
+
+    public int getEmployeeId() {
+        return employeeId;
     }
 }

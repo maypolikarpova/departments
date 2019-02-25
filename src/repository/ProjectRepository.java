@@ -47,4 +47,19 @@ public class ProjectRepository {
         }
         return projects;
     }
+
+    public int getDepartmentId(int projectId) {
+        int departmentId = 0;
+        try {
+            String sql = "SELECT department_id FROM Project WHERE project_id= " + projectId;
+            connectionManager.getStatement().execute(sql);
+            ResultSet resultSet = connectionManager.getStatement().getResultSet();
+            if ((resultSet != null) && (resultSet.next())) {
+                departmentId = resultSet.getInt(1);
+            }
+        } catch (SQLException e) {
+            System.out.println(e.getMessage());
+        }
+        return departmentId;
+    }
 }

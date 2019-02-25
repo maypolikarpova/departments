@@ -3,16 +3,12 @@ package ui;
 import domain.Department;
 import domain.Employee;
 import domain.Position;
-import repository.ConnectionManager;
-import repository.DepartmentRepository;
-import repository.EmployeeRepository;
-import repository.PositionRepository;
+import domain.Project;
+import repository.*;
 import ui.department.AddDepartmentWindow;
 import ui.department.EditDepartmentWindow;
 import ui.employee.AddEmployeeWindow;
-import ui.employee.FilterByEndDateWindow;
-import ui.employee.FilterByStartDateWindow;
-import ui.employee.SortByDateWindow;
+import ui.project.AddBossWindow;
 
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
@@ -22,6 +18,7 @@ import java.awt.event.KeyEvent;
 import java.util.Date;
 import java.util.List;
 import java.util.Objects;
+import java.util.stream.Collectors;
 
 public class DepartmentWindow {
     private DepartmentWindow mainWindow;
@@ -34,9 +31,11 @@ public class DepartmentWindow {
     private JButton addEmployeeButton;
     private JTable employeeTable;
     private PositionRepository positionRepository;
-    private JButton filterByStartDatesButton;
-    private JButton filterByEndDatedButton;
-    private JButton sortByDateButton;
+
+    private JTable projectTable;
+    private JButton addBossButton;
+    private ProjectRepository projectRepository;
+    private BossRepository bossRepository;
 
     public DepartmentWindow() {
         mainWindow = this;
@@ -46,6 +45,7 @@ public class DepartmentWindow {
         departmentRepository = new DepartmentRepository(connectionManager);
         employeeRepository = new EmployeeRepository(connectionManager);
         positionRepository = new PositionRepository(connectionManager);
+        projectRepository = new ProjectRepository(connectionManager);
 
         initialize();
     }
@@ -54,8 +54,8 @@ public class DepartmentWindow {
         departmentTable.setModel(fillDepartmentTable((DefaultTableModel) departmentTable.getModel()));
     }
 
-    public void refreshEmployeeTable() {
-        employeeTable.setModel(fillEmployeeTable((DefaultTableModel) employeeTable.getModel()));
+    public void refreshEmployeeTable(Integer selected) {
+        employeeTable.setModel(fillEmployeeTable((DefaultTableModel) employeeTable.getModel(), selected));
     }
 
     private void initialize() {
@@ -75,6 +75,10 @@ public class DepartmentWindow {
         JComponent panel2 = addEmployeePanel();
         tabbedPane.addTab("Управління  співробітниками", panel2);
         tabbedPane.setMnemonicAt(0, KeyEvent.VK_2);
+
+        JComponent panel3 = addProjectPanel();
+        tabbedPane.addTab("Управління  проектами", panel3);
+        tabbedPane.setMnemonicAt(0, KeyEvent.VK_3);
     }
 
     private JComponent addDepartmentPanel() {
@@ -185,9 +189,6 @@ public class DepartmentWindow {
 
         actionPanel.add(addChooseDepartmentBox());
         actionPanel.add(createEmployeeTable(), BorderLayout.CENTER);
-        actionPanel.add(addFilterByStartDatesButton(), BorderLayout.EAST);
-        actionPanel.add(addFilterByEndDatedButton(), BorderLayout.EAST);
-        actionPanel.add(addSortByDateButton(), BorderLayout.EAST);
         actionPanel.add(createAddEmployeeButton());
 
         employeePanel.add(controlPanel);
@@ -203,22 +204,39 @@ public class DepartmentWindow {
             new AddEmployeeWindow(mainWindow, positionRepository, departmentRepository, selectedEmployeeId);
         });
 
+        addEmployeeButton.setVisible(false);
+
         return addEmployeeButton;
     }
 
     private JComboBox addChooseDepartmentBox() {
 
-        JComboBox comboBox = new JComboBox(departmentRepository.getDepartments().stream()
-                                                   .map(Department::getDepartmentId)
-                                                   .map(Objects::toString).toArray());
+        JComboBox comboBox = new JComboBox(getEmployeesList());
 
         ActionListener actionListener = e -> {
             JComboBox box = (JComboBox) e.getSource();
-            String item = (String) box.getSelectedItem();
+            String boxText = (String) box.getSelectedItem();
+
+            Integer selected = null;
+            if (!boxText.equals("")) {
+                selected = Integer.parseInt(boxText);
+            }
+            refreshEmployeeTable(selected);
         };
         comboBox.addActionListener(actionListener);
 
         return comboBox;
+    }
+
+    private Object[] getEmployeesList() {
+        List<String> employees = departmentRepository.getDepartments().stream()
+                                         .map(Department::getDepartmentId)
+                                         .map(Objects::toString)
+                                         .collect(Collectors.toList());
+
+        employees.add("");
+
+        return employees.toArray();
     }
 
     private JPanel createEmployeeTable() {
@@ -239,7 +257,7 @@ public class DepartmentWindow {
             }
         });
 
-        employeeTable.setModel(fillEmployeeTable((DefaultTableModel) employeeTable.getModel()));
+        employeeTable.setModel(fillEmployeeTable((DefaultTableModel) employeeTable.getModel(), null));
 
         JScrollPane scrollPane = new JScrollPane(employeeTable);
         tablePanel.add(scrollPane);
@@ -247,9 +265,9 @@ public class DepartmentWindow {
         return tablePanel;
     }
 
-    private DefaultTableModel fillEmployeeTable(DefaultTableModel employeeTableModel) {
+    private DefaultTableModel fillEmployeeTable(DefaultTableModel employeeTableModel, Integer selected) {
         employeeTableModel.setRowCount(0);
-        List<Employee> employees = employeeRepository.getEmployees();
+        List<Employee> employees = employeeRepository.getEmployees(selected);
 
         for (Employee employee : employees) {
             String[] tableRow = new String[8];
@@ -270,37 +288,91 @@ public class DepartmentWindow {
                     tableRow[7] = endDate.toString();
                 }
             }
-            
+
             employeeTableModel.addRow(tableRow);
         }
 
         return employeeTableModel;
     }
 
-    private JButton addFilterByStartDatesButton() {
-        filterByStartDatesButton = new JButton("Фільтрувати за датою початку роботи");
-        filterByStartDatesButton.addActionListener(e -> {
-            new FilterByStartDateWindow(mainWindow, departmentRepository);
-        });
+    private JComponent addProjectPanel() {
+        JPanel projectPanel = new JPanel(false);
+        projectPanel.setLayout(new BorderLayout(0, 0));
 
-        return filterByStartDatesButton;
+        JPanel actionPanel = new JPanel(new GridLayout(3,1));
+
+        actionPanel.add(projectTable());
+        actionPanel.add(createAddBossButton());
+        actionPanel.add(addChooseDepartmentBox());
+
+        projectPanel.add(actionPanel);
+
+        return projectPanel;
     }
 
-    private JButton addFilterByEndDatedButton() {
-        filterByEndDatedButton = new JButton("Фільтрувати за датою закінчення роботи");
-        filterByEndDatedButton.addActionListener(e -> {
-            new FilterByEndDateWindow(mainWindow, departmentRepository);
+    private JPanel projectTable() {
+        JPanel tablePanel = new JPanel();
+        projectTable = new JTable();
+        tablePanel.setLayout(new GridLayout());
+        projectTable.setFillsViewportHeight(true);
+        projectTable.setDefaultEditor(Object.class, null);
+        projectTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+
+        String[] columnNames = {"Номер", "Клієнт", "Початок роботи", "Плановане закінчення", "Реальне закінчення", "Ціна", "Витрати", "Оцінка", "Номер відділу"};
+        DefaultTableModel departmentTableModel = (DefaultTableModel) projectTable.getModel();
+        departmentTableModel.setColumnIdentifiers(columnNames);
+
+        projectTable.getSelectionModel().addListSelectionListener(e -> {
+            if (projectTable.getSelectedRow() != -1) {
+                addBossButton.setVisible(true);
+            }
         });
 
-        return filterByEndDatedButton;
+        projectTable.setModel(fillProjectTable((DefaultTableModel) projectTable.getModel(), null));
+
+        JScrollPane scrollPane = new JScrollPane(projectTable);
+        tablePanel.add(scrollPane);
+
+        return tablePanel;
     }
 
-    private JButton addSortByDateButton() {
-        sortByDateButton = new JButton("Сортувати за складом на певну дату");
-        sortByDateButton.addActionListener(e -> {
-            new SortByDateWindow(mainWindow, departmentRepository);
+    private DefaultTableModel fillProjectTable(DefaultTableModel projectTableModel, Integer selected) {
+        projectTableModel.setRowCount(0);
+        List<Project> projects = projectRepository.getProjects(selected);
+
+        for (Project project : projects) {
+            String[] tableRow = new String[9];
+            int projectId = project.getId();
+
+            tableRow[0] = Integer.toString(projectId);
+            tableRow[1] = project.getClient();
+            tableRow[2] = project.getStartDate().toString();
+            tableRow[3] = project.getEndDatePlanned().toString();
+
+            Date actual = project.getEndDateActual();
+            if (actual != null) {
+                tableRow[4] = actual.toString();
+            }
+            tableRow[5] = project.getPrice().toString();
+            tableRow[6] = project.getExpense().toString();
+            tableRow[7] = project.getEstimation();
+            tableRow[8] = String.valueOf(project.getDepartmentId());
+
+            projectTableModel.addRow(tableRow);
+        }
+
+        return projectTableModel;
+    }
+
+    private JButton createAddBossButton() {
+        addBossButton = new JButton("Додати керівника до проекту");
+        addBossButton.addActionListener(e -> {
+            int selectedProjectId = Integer.parseInt(projectTable.getValueAt(projectTable.getSelectedRow(), 0).toString());
+            new AddBossWindow(mainWindow, bossRepository, selectedProjectId);
         });
 
-        return sortByDateButton;
+        addBossButton.setVisible(false);
+
+        return addBossButton;
     }
 }

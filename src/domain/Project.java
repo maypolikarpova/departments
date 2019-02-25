@@ -1,19 +1,32 @@
 package domain;
 
 import java.math.BigDecimal;
-import java.time.LocalDate;
+import java.util.Date;
 
 public class Project {
 
     private int id;
     private String client;
-    private LocalDate startDate;
-    private LocalDate  endDatePlanned;
-    private LocalDate  endDateActual;
+    private Date startDate;
+    private Date endDatePlanned;
+    private Date endDateActual;
     private BigDecimal price;
     private BigDecimal expense;
     private String estimation;
     private int departmentId;
+
+
+    public Project(int id, String client, Date startDate, Date endDatePlanned, Date endDateActual, BigDecimal price, BigDecimal expense, String estimation, int departmentId) {
+       this.id = id;
+       this.client = client;
+       this.startDate = startDate;
+       this.endDateActual = endDateActual;
+       this.endDatePlanned = endDatePlanned;
+       this.price = price;
+       this.expense = expense;
+       this.estimation = estimation;
+       this.departmentId = departmentId;
+    }
 
     public int getId() {
         return id;
@@ -31,27 +44,27 @@ public class Project {
         this.client = client;
     }
 
-    public LocalDate getStartDate() {
+    public Date getStartDate() {
         return startDate;
     }
 
-    public void setStartDate(LocalDate startDate) {
+    public void setStartDate(Date startDate) {
         this.startDate = startDate;
     }
 
-    public LocalDate getEndDatePlanned() {
+    public Date getEndDatePlanned() {
         return endDatePlanned;
     }
 
-    public void setEndDatePlanned(LocalDate endDatePlanned) {
+    public void setEndDatePlanned(Date endDatePlanned) {
         this.endDatePlanned = endDatePlanned;
     }
 
-    public LocalDate getEndDateActual() {
+    public Date getEndDateActual() {
         return endDateActual;
     }
 
-    public void setEndDateActual(LocalDate endDateActual) {
+    public void setEndDateActual(Date endDateActual) {
         this.endDateActual = endDateActual;
     }
 

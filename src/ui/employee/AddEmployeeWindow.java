@@ -90,7 +90,7 @@ public class AddEmployeeWindow {
                 salaryField.setEditable(false);
                 submitButton.setEnabled(false);
 
-                mainWindow.refreshEmployeeTable();
+                mainWindow.refreshEmployeeTable(null);
             } catch (Exception ex) {
                 message.setText(ex.getMessage());
             }
@@ -114,7 +114,7 @@ public class AddEmployeeWindow {
         };
 
         comboBox.addActionListener(actionListener);
-        mainWindow.refreshEmployeeTable();
+        mainWindow.refreshEmployeeTable(null);
 
         return comboBox;
     }

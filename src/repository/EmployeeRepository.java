@@ -12,13 +12,20 @@ public class EmployeeRepository {
     private ConnectionManager connectionManager;
 
     public EmployeeRepository(ConnectionManager connectionManager) {
-       this.connectionManager = connectionManager;
+        this.connectionManager = connectionManager;
     }
 
-    public List<Employee> getEmployees() {
+    public List<Employee> getEmployees(Integer selected) {
+
+        String sql = "SELECT * FROM Employee";
+
+        if (selected != null) {
+            sql = "SELECT T1.employee_id, surname, sex, birthday FROM Employee T1 "
+                          + "INNER JOIN Positions T2 ON T1.employee_id = T2.employee_id WHERE T2.department_id=" + selected.intValue();
+        }
+
         List<Employee> employees = new ArrayList<>();
         try {
-            String sql = "SELECT * FROM Employee";
             connectionManager.getStatement().execute(sql);
             ResultSet resultSet = connectionManager.getStatement().getResultSet();
             if (resultSet != null) {
